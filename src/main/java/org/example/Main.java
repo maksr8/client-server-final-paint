@@ -3,9 +3,12 @@ package org.example;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.example.network.JwtAuthenticator;
 import org.example.network.PaintHttpServer;
+import org.example.network.websocket.PaintWebSocketServer;
 import org.example.repository.ConnectionProvider;
+import org.example.repository.DrawingRepository;
 import org.example.repository.UserRepository;
 import org.example.service.AuthService;
+import org.example.service.DrawingService;
 import org.example.service.JwtService;
 import org.flywaydb.core.Flyway;
 
@@ -37,16 +40,27 @@ public class Main {
             JwtService jwtService = new JwtService(jwtSecret, jwtIssuer, jwtExpirationTimeMs);
             AuthService authService = new AuthService(userRepository, jwtService);
             JwtAuthenticator authenticator = new JwtAuthenticator(jwtService);
+            DrawingRepository drawingRepository = new DrawingRepository(connectionProvider);
+            DrawingService drawingService = new DrawingService(drawingRepository, userRepository);
 
-            authService.registerUser("admin", "admin123");
+            //authService.registerUser("admin", "admin123");
 
             ExecutorService serverExecutor = Executors.newFixedThreadPool(10);
-            PaintHttpServer httpServer = new PaintHttpServer(httpPort, serverExecutor, authService, authenticator);
+            PaintHttpServer httpServer = new PaintHttpServer(httpPort, serverExecutor, authService, drawingService, authenticator);
             httpServer.start();
+
+            int wsPort = Integer.parseInt(dotenv.get("WS_PORT"));
+            PaintWebSocketServer wsServer = new PaintWebSocketServer(wsPort, jwtService);
+            wsServer.start();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Shutting down server...");
                 httpServer.close();
+                try {
+                    wsServer.stop();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 serverExecutor.shutdown();
                 connectionProvider.close();
             }));

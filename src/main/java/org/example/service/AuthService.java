@@ -15,11 +15,14 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public void registerUser(String username, String rawPassword) {
+    public String registerUser(String username, String rawPassword) {
         try {
             byte[] hashedBytes = CipherService.generateSHA256FromPassword(rawPassword);
             String passwordHash = HexFormat.of().formatHex(hashedBytes);
             userRepository.createUser(new User(null, username, passwordHash));
+            return jwtService.generateToken(username);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Error registering user", e);
         }

@@ -15,7 +15,7 @@ public class UserRepository {
     }
 
     public void createUser(User user) {
-        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?) ON CONFLICT (username) DO NOTHING";
+        String sql = "INSERT INTO users (username, password_hash) VALUES (?, ?)";
         try (Connection conn = connectionProvider.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -23,6 +23,9 @@ public class UserRepository {
             stmt.setString(2, user.passwordHash());
             stmt.executeUpdate();
         } catch (SQLException e) {
+            if (e.getSQLState().equals("23505") || e.getMessage().contains("duplicate key value")) {
+                throw new IllegalArgumentException("Username already exists", e);
+            }
             throw new RuntimeException("Database error while creating user: " + e.getMessage(), e);
         }
     }
