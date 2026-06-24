@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18.3-alpine
+    container_name: client_server_paint_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg-data:/var/lib/postgresql
+
+volumes:
+  pg-data:
