@@ -25,6 +25,10 @@ public class PaintHttpServer implements AutoCloseable {
         System.out.println("HTTP Server is listening on port " + server.getAddress().getPort());
     }
 
+    public int getPort() {
+        return server.getAddress().getPort();
+    }
+
     @Override
     public void close() {
         if (server != null) {

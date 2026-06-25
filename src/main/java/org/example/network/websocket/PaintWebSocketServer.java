@@ -53,7 +53,7 @@ public class PaintWebSocketServer extends WebSocketServer {
                     .add(conn);
             System.out.println("User [" + username + "] joined drawing ID: " + drawingId);
         } catch (Exception e) {
-            conn.closeConnection(5000, "Internal Server Error");
+            conn.closeConnection(4999, "Internal Server Error");
         }
     }
 
