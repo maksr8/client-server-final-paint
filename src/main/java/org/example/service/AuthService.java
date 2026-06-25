@@ -1,6 +1,5 @@
 package org.example.service;
 
-import org.example.crypto.CipherService;
 import org.example.model.User;
 import org.example.repository.UserRepository;
 
@@ -35,17 +34,18 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        String inputPasswordHash;
         try {
             byte[] hashedBytes = CipherService.generateSHA256FromPassword(password);
-            String inputPasswordHash = HexFormat.of().formatHex(hashedBytes);
-            
-            if (!user.passwordHash().equals(inputPasswordHash)) {
-                throw new IllegalArgumentException("Invalid credentials");
-            }
-            
-            return jwtService.generateToken(username);
+            inputPasswordHash = HexFormat.of().formatHex(hashedBytes);
         } catch (Exception e) {
-            throw new RuntimeException("Error during login process", e);
+            throw new RuntimeException("Error generating password hash", e);
         }
+
+        if (!user.passwordHash().equals(inputPasswordHash)) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        return jwtService.generateToken(username);
     }
 }

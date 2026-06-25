@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PaintWebSocketServer extends WebSocketServer {
     private final JwtService jwtService;
     
-    private final Map<Integer, Set<WebSocket>> drawingConnections = new ConcurrentHashMap<>();
+    private final Map<String, Set<WebSocket>> drawingConnections = new ConcurrentHashMap<>();
 
     public PaintWebSocketServer(int port, JwtService jwtService) {
         super(new InetSocketAddress(port));
@@ -45,7 +45,7 @@ public class PaintWebSocketServer extends WebSocketServer {
                 conn.closeConnection(4002, "Invalid path");
                 return;
             }
-            int drawingId = Integer.parseInt(path.substring(9));
+            String drawingId = path.substring(9);
             conn.setAttachment(drawingId);
 
             drawingConnections
@@ -59,7 +59,7 @@ public class PaintWebSocketServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        Integer drawingId = conn.getAttachment();
+        String drawingId = conn.getAttachment();
         if (drawingId != null) {
             Set<WebSocket> clients = drawingConnections.get(drawingId);
             if (clients != null) {
@@ -78,7 +78,7 @@ public class PaintWebSocketServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
-        Integer drawingId = conn.getAttachment();
+        String drawingId = conn.getAttachment();
         if (drawingId == null) return;
 
         Set<WebSocket> clients = drawingConnections.getOrDefault(drawingId, Collections.emptySet());

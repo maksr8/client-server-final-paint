@@ -3,13 +3,13 @@ package org.example.network;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.example.dto.CreateDrawingRequest;
+import org.example.dto.DrawingsListDto;
 import org.example.model.Drawing;
 import org.example.service.DrawingService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 
 public class DrawingHandler implements HttpHandler {
     private final DrawingService drawingService;
@@ -28,18 +28,21 @@ public class DrawingHandler implements HttpHandler {
 
         try {
             if (pathParts.length == 3 && method.equals("GET")) {
-                handleGetAll(exchange);
+                handleGetAll(exchange, username);
             } else if (pathParts.length == 3 && method.equals("POST")) {
                 handleCreate(exchange, username);
             } else if (pathParts.length == 4) {
-                int drawingId = Integer.parseInt(pathParts[3]);
+                String id = pathParts[3];
                 
                 switch (method) {
-                    case "GET" -> handleGetOne(exchange, drawingId);
-                    case "PUT" -> handleUpdateData(exchange, drawingId);
-                    case "DELETE" -> handleDelete(exchange, username, drawingId);
+                    case "GET" -> handleGetOne(exchange, username, id);
+                    case "PUT" -> handleUpdateData(exchange, id);
+                    case "DELETE" -> handleDelete(exchange, username, id);
                     default -> sendResponse(exchange, 405, "{\"error\": \"Method Not Allowed\"}");
                 }
+            } else if (pathParts.length == 5 && pathParts[4].equals("name") && method.equals("PATCH")) {
+                String id = pathParts[3];
+                handleRename(exchange, username, id);
             } else {
                 sendResponse(exchange, 404, "{\"error\": \"Endpoint not found\"}");
             }
@@ -53,13 +56,13 @@ public class DrawingHandler implements HttpHandler {
         }
     }
 
-    private void handleGetAll(HttpExchange exchange) throws IOException {
-        List<Drawing> drawings = drawingService.getAllDrawings();
+    private void handleGetAll(HttpExchange exchange, String username) throws IOException {
+        DrawingsListDto drawings = drawingService.getAllDrawings(username);
         sendResponse(exchange, 200, objectMapper.writeValueAsString(drawings));
     }
 
-    private void handleGetOne(HttpExchange exchange, int id) throws IOException {
-        Drawing drawing = drawingService.getDrawing(id);
+    private void handleGetOne(HttpExchange exchange, String username, String id) throws IOException {
+        Drawing drawing = drawingService.getDrawing(username, id);
         sendResponse(exchange, 200, objectMapper.writeValueAsString(drawing));
     }
 
@@ -69,7 +72,7 @@ public class DrawingHandler implements HttpHandler {
         sendResponse(exchange, 201, objectMapper.writeValueAsString(newDrawing));
     }
 
-    private void handleUpdateData(HttpExchange exchange, int id) throws IOException {
+    private void handleUpdateData(HttpExchange exchange, String id) throws IOException {
         var jsonNode = objectMapper.readTree(exchange.getRequestBody());
         String data = jsonNode.get("data").asString();
         
@@ -77,7 +80,15 @@ public class DrawingHandler implements HttpHandler {
         sendResponse(exchange, 200, "{\"message\": \"Saved successfully\"}");
     }
 
-    private void handleDelete(HttpExchange exchange, String username, int id) throws IOException {
+    private void handleRename(HttpExchange exchange, String username, String id) throws IOException {
+        var jsonNode = objectMapper.readTree(exchange.getRequestBody());
+        String newName = jsonNode.get("name").asString();
+
+        drawingService.renameDrawing(username, id, newName);
+        sendResponse(exchange, 200, "{\"message\": \"Renamed successfully\"}");
+    }
+
+    private void handleDelete(HttpExchange exchange, String username, String id) throws IOException {
         drawingService.deleteDrawing(username, id);
         sendResponse(exchange, 200, "{\"message\": \"Deleted successfully\"}");
     }

@@ -5,7 +5,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE drawings (
-                          id SERIAL PRIMARY KEY,
+                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                           name VARCHAR(255) NOT NULL,
                           owner_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                           data TEXT,
